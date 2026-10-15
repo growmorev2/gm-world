@@ -1,0 +1,74 @@
+name: Update GM World breadth
+
+on:
+  schedule:
+    # 10:53 UTC = 4:23 PM IST, Monday to Friday (GitHub may start it a few minutes late)
+    - cron: '53 10 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gm-world-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MAIL_USER: ${{ secrets.MAIL_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install headless browser
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+
+      - name: Pull data from Chartink
+        id: data
+        env:
+          CHARTINK_COOKIE: ${{ secrets.CHARTINK_COOKIE }}
+        run: node scripts/update.mjs
+
+      - name: Save the updated page
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update breadth data $(TZ=Asia/Kolkata date +%F)"
+            git push
+          fi
+
+      # Email a PDF of the page on each new trading day (and on manual test runs).
+      # Skipped until the MAIL_USERNAME secret is set (see README).
+      - name: Save the page as PDF
+        if: env.MAIL_USER != '' && (steps.data.outputs.updated == 'true' || github.event_name == 'workflow_dispatch')
+        run: node scripts/pdf.mjs "GM-World-${{ steps.data.outputs.date }}.pdf"
+
+      - name: Email the PDF
+        if: env.MAIL_USER != '' && (steps.data.outputs.updated == 'true' || github.event_name == 'workflow_dispatch')
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: GM World <${{ secrets.MAIL_USERNAME }}>
+          to: ${{ secrets.MAIL_TO }}
+          subject: GM World market breadth – ${{ steps.data.outputs.asof }}
+          body: |
+            ${{ steps.data.outputs.summary }}
+
+            The full page is attached as a PDF.
+          attachments: GM-World-${{ steps.data.outputs.date }}.pdf

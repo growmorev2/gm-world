@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>GM World Breadth</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: market-terminal sheet — summary strip, then a two-column grid of chart panels that stacks on phones */
+:root {
+  --bg: #F6F7F9;
+  --panel: #FFFFFF;
+  --fg: #16202C;
+  --muted: #5E6B7A;
+  --line: #DDE2E8;
+  --grid: #E9EDF1;
+  /* series colors (same in both themes, chosen to read on light and dark) */
+  --c-main: #1F6FEB;
+  --c-avg: #F08A00;
+  --c-ob: #DC2626;
+  --c-mid: #7A8594;
+  --c-os: #16A34A;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F141B; --panel: #161D26; --fg: #E6EBF1; --muted: #93A0AF;
+    --line: #26303C; --grid: #212A35; --c-main: #4C8DFF; --c-avg: #FFA126;
+    --c-ob: #F05252; --c-mid: #8D98A6; --c-os: #2FBF63; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F141B; --panel: #161D26; --fg: #E6EBF1; --muted: #93A0AF;
+  --line: #26303C; --grid: #212A35; --c-main: #4C8DFF; --c-avg: #FFA126;
+  --c-ob: #F05252; --c-mid: #8D98A6; --c-os: #2FBF63; color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header h1 { font-size: 1.45rem; font-weight: 600; margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.stat .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.stat .v { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 1.3rem; font-weight: 500; margin-top: 2px; }
+.stat .d { font-family: var(--font-num); font-size: 0.78rem; color: var(--muted); }
+.chip { display: inline-block; font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; padding: 1px 7px; border-radius: 999px; margin-left: 6px; vertical-align: 3px; }
+.chip.ext { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
+.chip.str { background: color-mix(in srgb, var(--c-os) 16%, transparent); color: var(--c-os); }
+.chip.mild { background: color-mix(in srgb, var(--c-os) 9%, transparent); color: var(--c-os); border: 1px dashed color-mix(in srgb, var(--c-os) 60%, transparent); }
+.chip.weak { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
+.chip.chop { background: color-mix(in srgb, var(--c-mid) 18%, transparent); color: var(--muted); }
+.chip.bot { background: color-mix(in srgb, var(--c-main) 16%, transparent); color: var(--c-main); }
+.stat .k { font-size: 0.85rem; }
+.stat .v { font-size: 1.6rem; }
+.stat .d { font-size: 0.95rem; }
+.chip { font-size: 0.9rem; padding: 2px 10px; vertical-align: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.sw.dash { background: none !important; border-top: 2px dashed; height: 0; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px 10px; min-width: 0; }
+.panel h2 { font-size: 0.95rem; font-weight: 600; margin: 0 0 2px; }
+.panel .sub { font-size: 0.78rem; color: var(--muted); margin: 0 0 8px; }
+.box { position: relative; height: 260px; }
+.panel.wide { grid-column: 1 / -1; }
+.panel.wide .box { height: 320px; }
+.panel.wide .box.land { height: 560px; }
+@media (max-width: 760px) { .panel.wide .box.land { height: 680px; } }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.btns button { font: 500 0.8rem var(--font-ui); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.btns button:hover { border-color: var(--c-main); }
+.btns button:focus-visible { outline: 2px solid var(--c-main); outline-offset: 2px; }
+footer { color: var(--muted); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>GM World market breadth</h1>
+    <p id="hdr">Chartink dashboard 499165</p>
+  </header>
+
+  <div class="strip" id="strip"></div>
+
+  <div class="legend">
+    <span><i class="sw" style="background:var(--c-main)"></i>Reading</span>
+    <span><i class="sw" style="background:var(--c-avg)"></i>5-day average</span>
+    <span><i class="sw dash" style="border-color:var(--c-ob)"></i>Overbought 80</span>
+    <span><i class="sw dash" style="border-color:var(--c-mid)"></i>Mid 50</span>
+    <span><i class="sw dash" style="border-color:var(--c-os)"></i>Oversold 20</span>
+  </div>
+
+  <div class="grid">
+    <section class="panel"><h2>Short-term trend (20)</h2><p class="sub">Breadth, 20-period</p><div class="box"><canvas id="c20"></canvas></div></section>
+    <section class="panel"><h2>Medium-term trend (50)</h2><p class="sub">Breadth, 50-period</p><div class="box"><canvas id="c50"></canvas></div></section>
+    <section class="panel"><h2>Long-term trend (200)</h2><p class="sub">Breadth, 200-period</p><div class="box"><canvas id="c200"></canvas></div></section>
+    <section class="panel"><h2>Homma Mswing Score</h2><p class="sub">Soft score with 5-day average</p><div class="box"><canvas id="chom"></canvas></div></section>
+    <section class="panel wide"><h2>252-day net new highs − new lows</h2><p class="sub">Percent of stocks; green above zero, red below</p><div class="box"><canvas id="cnh"></canvas></div></section>
+    <section class="panel wide"><h2>Landry Momentum by sector</h2><p class="sub" id="landsub">All sectors · tap a name to hide or show it</p><div class="btns"><button type="button" id="b-all">Show all 28</button><button type="button" id="b-top">Top 6 only</button><button type="button" id="b-none">Hide all</button></div><div class="box land"><canvas id="cland"></canvas></div></section>
+  </div>
+
+  <footer>Source: chartink.com/dashboard/499165 (Atlas GM WORLD). Refreshed automatically each trading day after the market close by GitHub Actions.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/*DATA-START*/const DATA = {"asOf":"15 Oct 2026","dates":["17 Sep","18 Sep","21 Sep","22 Sep","23 Sep","24 Sep","25 Sep","28 Sep","29 Sep","30 Sep","1 Oct","5 Oct","6 Oct","7 Oct","8 Oct","9 Oct","12 Oct","13 Oct","14 Oct","15 Oct"],"t20":[27.9,38.2,37.94,39.2,46.82,37.55,39.25,29.16,30.19,30.86,23.51,25.1,34.11,35.61,21.27,23.91,28.26,32.31,37.99,30.88],"a20":[30.74,30.21,30.25,33.22,38.01,39.94,40.1,38.36,36.57,33.39,30.6,27.76,28.76,29.84,27.93,28,28.63,28.29,28.79,30.68],"t50":[35.2,40.06,40.32,40.5,44.95,39.46,41.07,34.08,34.18,34.23,30.09,30.59,34.27,34.58,25.57,27.02,28.47,29.36,32.92,28.5],"a50":[37.99,37.07,36.55,37.85,40.19,41.05,41.21,39.98,38.73,36.59,34.73,32.65,32.69,32.76,31.02,30.4,29.98,29.01,28.71,29.26],"t200":[47.67,50.16,49.74,49.87,51.89,49.25,49.77,46.66,46.04,45.88,43.55,43.94,45.29,45.24,42.18,42.75,43.43,44.54,45.96,44.82],"a200":[48.51,48.25,47.9,48.6,49.85,50.17,50.06,49.46,48.7,47.51,46.38,45.24,44.96,44.79,44.05,43.88,43.78,43.65,43.81,44.32],"hom":[40.58,41.61,40.63,39.88,44.38,38.27,41.27,35.78,35.27,35.68,32.88,32.09,35.4,34.47,27.02,28.42,30.8,31.8,38.66,35.6],"ahom":[39.43,38.91,38.35,39.45,41.4,40.94,40.84,39.88,38.96,37.24,36.18,34.36,34.28,34.11,32.38,31.48,31.22,30.51,31.38,33.07],"nh":[-0.53,0.6,1.18,0.98,1.96,-0.39,-0.81,-1.64,-4.37,-0.7,-5.92,-1.64,-0.04,-0.67,-5.91,-4.24,-1.29,-2,0.42,-0.04],"sectors":{"consumer discretionary":[19,23,24,23,24,21,19,20,20,21,19,18,21,22,20,20,24,21,23,24],"i.t":[13,15,15,16,17,16,15,12,13,13,11,14,15,14,12,13,15,13,17,19],"fmcg":[19,21,23,22,24,22,19,16,15,18,11,12,14,12,9,7,9,10,14,16],"industrials":[38,43,44,42,43,40,37,36,34,34,32,29,30,31,27,24,22,20,22,14],"financials":[18,19,19,19,17,15,15,12,10,9,8,8,8,9,7,7,8,10,14,13],"chemicals":[24,26,27,26,24,23,24,22,19,23,17,17,19,19,17,16,15,11,11,11],"realty":[14,14,15,17,17,19,19,17,15,18,13,13,13,15,13,14,11,12,11,11],"healthcare":[41,42,41,40,39,39,38,35,36,36,27,22,21,22,16,15,14,10,9,9],"textiles":[10,11,11,11,13,13,15,14,12,11,11,10,9,8,8,8,7,7,7,8],"metals & mining":[15,15,16,12,15,14,13,12,15,15,13,13,13,14,13,10,9,9,9,8],"aerospace & defence":[8,8,8,8,8,8,7,7,7,8,8,9,10,10,9,9,9,8,8,7],"building materials":[9,9,9,9,9,10,11,10,8,8,7,6,6,7,7,6,6,5,7,6],"services":[5,6,7,8,8,7,7,6,5,4,5,4,4,4,5,4,4,3,6,5],"transportation":[3,3,5,3,3,2,4,4,4,4,4,5,5,5,5,4,4,4,4,4],"energy":[13,14,13,11,11,9,9,9,9,9,6,6,7,7,5,6,5,3,4,4],"castings, forgings & fasteners":[2,3,2,3,3,3,3,3,2,2,3,3,3,3,3,4,4,4,4,4],"auto":[17,18,18,18,18,20,21,19,17,17,15,14,11,10,6,5,5,5,6,4],"bank":[5,4,3,3,4,2,2,0,0,1,1,1,1,2,1,1,3,2,3,4],"miscellaneous":[4,5,5,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],"media":[3,3,3,4,4,4,4,4,3,5,3,3,3,2,2,1,2,3,3,3],"plastic products":[2,1,2,2,4,4,4,4,4,4,4,4,4,4,4,3,4,3,3,3],"telecom":[0,0,0,1,2,1,1,1,1,1,2,2,2,2,1,1,1,2,2,2],"power & utilities":[0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"readymade garments/apparels":[3,3,2,3,3,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1],"n/a":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"indices":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"telecom-service":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],"co-working":[2,2,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0]}};/*DATA-END*/
+const D = DATA.dates;
+const S = DATA;
+const NAMES = { "consumer discretionary": "Consumer discretionary", "i.t": "IT", "fmcg": "FMCG", "n/a": "N/A" };
+const nice = k => NAMES[k] || k.charAt(0).toUpperCase() + k.slice(1);
+const TOP = [["consumer discretionary", "#2563EB", "#5B8CFF"], ["i.t", "#7C3AED", "#A97BFF"], ["fmcg", "#15803D", "#34C46A"], ["industrials", "#EA580C", "#FF8A3D"], ["financials", "#0E7490", "#29B6D6"], ["healthcare", "#BE185D", "#F062A0"]];
+const SECT = [
+  ...TOP.filter(t => DATA.sectors[t[0]]).map(([k, l, d]) => [nice(k), l, d, DATA.sectors[k]]),
+  ...Object.keys(DATA.sectors).filter(k => !TOP.some(t => t[0] === k)).map(k => [nice(k), null, null, DATA.sectors[k]])
+];
+const sectColor = (i, dk) => {
+  const s = SECT[i];
+  if (s[1]) return dk ? s[2] : s[1];
+  const h = Math.round((i * 137.508 + 20) % 360);
+  return `hsl(${h} 62% ${dk ? 64 : 40}%)`;
+};
+let hiddenSect = new Set(SECT.slice(6).map(s => s[0]));
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const isDark = () => {
+  const t = document.documentElement.getAttribute("data-theme");
+  if (t) return t === "dark";
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+};
+const last = a => a[a.length - 1];
+const fmt = (n, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toFixed(d);
+
+function zone(v) { return v > 80 ? ["ext","Extended"] : v > 50 ? ["str","Strong"] : v >= 20 ? ["chop","Choppy"] : ["bot","Near the bottom"]; }
+function nhChip() {
+  const v = S.nh, n = v[v.length - 1];
+  if (n > 5) return `<span class="chip str">Strong</span>`;
+  if (v.slice(-3).every(x => x > 0)) return `<span class="chip mild">Mild positive</span>`;
+  if (n < -2) return `<span class="chip weak">Weak</span>`;
+  if (n <= 2) return `<span class="chip chop">Weak & choppy</span>`;
+  return `<span class="chip str">Positive</span>`;
+}
+function buildStrip() {
+  const items = [["Short (20)", S.t20, S.a20], ["Medium (50)", S.t50, S.a50], ["Long (200)", S.t200, S.a200], ["Homma", S.hom, S.ahom]];
+  let h = items.map(([k, s, a]) => {
+    const v = last(s), ch = v - s[s.length - 2], z = zone(v);
+    return `<div class="stat"><div class="k">${k}</div><div class="v">${fmt(v)}<span class="chip ${z[0]}">${z[1]}</span></div><div class="d">${ch >= 0 ? "+" : ""}${fmt(ch)} today · avg ${fmt(last(a))}</div></div>`;
+  }).join("");
+  const n = last(S.nh);
+  h += `<div class="stat"><div class="k">Net NH − NL</div><div class="v">${n >= 0 ? "+" : ""}${fmt(n, 2)}%${nhChip()}</div><div class="d">${S.nh.filter(x => x > 0).length} of ${S.nh.length} sessions positive</div></div>`;
+  document.getElementById("strip").innerHTML = h;
+}
+
+const charts = [];
+function base(yOpts) {
+  return {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: { filter: i => !i.dataset._band, callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y, 2)}` } }
+    },
+    scales: {
+      x: { grid: { color: css("--grid") }, ticks: { color: css("--muted"), maxRotation: 0, autoSkip: true, maxTicksLimit: 8, font: { family: css("--font-num"), size: 11 } } },
+      y: Object.assign({ grid: { color: css("--grid") }, ticks: { color: css("--muted"), font: { family: css("--font-num"), size: 11 } } }, yOpts)
+    }
+  };
+}
+const band = (v, col, label) => ({ label, data: D.map(() => v), borderColor: col, borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, _band: true });
+function trend(id, main, avg, name) {
+  return new Chart(document.getElementById(id), {
+    type: "line",
+    data: { labels: D, datasets: [
+      { label: name, data: main, borderColor: css("--c-main"), backgroundColor: css("--c-main"), borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 4, tension: 0.15 },
+      { label: "5-day avg", data: avg, borderColor: css("--c-avg"), backgroundColor: css("--c-avg"), borderWidth: 2.5, pointRadius: 0, tension: 0.15 },
+      band(80, css("--c-ob"), "Overbought"), band(50, css("--c-mid"), "Mid"), band(20, css("--c-os"), "Oversold")
+    ]},
+    options: base({ min: 0, max: 100, ticks: { stepSize: 20, color: css("--muted"), font: { family: css("--font-num"), size: 11 } } })
+  });
+}
+function draw() {
+  charts.splice(0).forEach(c => c.destroy());
+  charts.push(trend("c20", S.t20, S.a20, "Short (20)"));
+  charts.push(trend("c50", S.t50, S.a50, "Medium (50)"));
+  charts.push(trend("c200", S.t200, S.a200, "Long (200)"));
+  charts.push(trend("chom", S.hom, S.ahom, "Homma soft"));
+  charts.push(new Chart(document.getElementById("cnh"), {
+    type: "bar",
+    data: { labels: D, datasets: [{ label: "Net NH − NL %", data: S.nh, backgroundColor: S.nh.map(v => v >= 0 ? css("--c-os") : css("--c-ob")), borderRadius: 2 }] },
+    options: base({ suggestedMin: -7, suggestedMax: 3 })
+  }));
+  const dk = isDark();
+  const lo = base({ min: 0 });
+  lo.plugins.legend = { display: true, position: "bottom", labels: { color: css("--fg"), boxWidth: 14, boxHeight: 3, font: { family: css("--font-ui"), size: 12 } } };
+  lo.plugins.legend.labels.generateLabels = ch => {
+    const base = Chart.defaults.plugins.legend.labels.generateLabels(ch);
+    base.forEach(l => {
+      const v = SECT[l.datasetIndex][3], now = v[v.length - 1], ch1 = now - v[v.length - 2];
+      l.text = `${SECT[l.datasetIndex][0]}  ${now} (${ch1 > 0 ? "+" : ""}${ch1})`;
+      l._v = now;
+    });
+    return base.sort((a, b) => b._v - a._v || a.datasetIndex - b.datasetIndex);
+  };
+  lo.plugins.legend.labels.font = { family: css("--font-num"), size: 12 };
+  lo.plugins.legend.onClick = (e, item, legend) => {
+    const n = SECT[item.datasetIndex][0];
+    hiddenSect.has(n) ? hiddenSect.delete(n) : hiddenSect.add(n);
+    const ch = legend.chart; ch.setDatasetVisibility(item.datasetIndex, !hiddenSect.has(n)); ch.update();
+  };
+  lo.plugins.tooltip.itemSort = (a, b) => b.parsed.y - a.parsed.y;
+  const land = new Chart(document.getElementById("cland"), {
+    type: "line",
+    data: { labels: D, datasets: SECT.map(([n, , , v], i) => ({ label: n, data: v, borderColor: sectColor(i, dk), backgroundColor: sectColor(i, dk), borderWidth: i < 6 ? 2.5 : 1.75, pointRadius: 0, pointHoverRadius: 4, tension: 0.15, hidden: hiddenSect.has(n) })) },
+    options: lo
+  });
+  charts.push(land);
+  window.__land = land;
+}
+
+document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
+document.getElementById("landsub").textContent = `All ${SECT.length} sectors · names below show ${last(D)} value and change from ${D[D.length - 2]}, highest first · tap a name to hide or show it`;
+document.getElementById("b-all").textContent = `Show all ${SECT.length}`;
+buildStrip();
+draw();
+function setSect(fn) {
+  hiddenSect = new Set(SECT.map(s => s[0]).filter((n, i) => !fn(i)));
+  const ch = window.__land; if (!ch) return;
+  SECT.forEach((s, i) => ch.setDatasetVisibility(i, !hiddenSect.has(s[0])));
+  ch.update();
+}
+document.getElementById("b-all").addEventListener("click", () => setSect(() => true));
+document.getElementById("b-top").addEventListener("click", () => setSect(i => i < 6));
+document.getElementById("b-none").addEventListener("click", () => setSect(() => false));
+try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw); } catch (e) {}
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+
+</body>
+</html>
