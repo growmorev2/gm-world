@@ -1,7 +1,7 @@
 # GM World market breadth
 
 A one-page view of the Chartink dashboard "Atlas GM WORLD" (chartink.com/dashboard/499165).
-GitHub Actions refreshes it every weekday at about 4:23 PM IST, and GitHub Pages hosts it.
+GitHub Actions refreshes it every weekday at about 5:30 PM IST, and GitHub Pages hosts it.
 Your computer does not need to be on.
 
 ## What's in here

@@ -2,8 +2,8 @@ name: Update GM World breadth
 
 on:
   schedule:
-    # 10:53 UTC = 4:23 PM IST, Monday to Friday (GitHub may start it a few minutes late)
-    - cron: '53 10 * * 1-5'
+    # 12:00 UTC = 5:30 PM IST, Monday to Friday (GitHub may start it a few minutes late)
+    - cron: '0 12 * * 1-5'
   workflow_dispatch: {}
 
 permissions:
