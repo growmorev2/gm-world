@@ -80,7 +80,7 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .ma { min-width: 0; }
 .ma h3 { font-size: 0.85rem; font-weight: 600; margin: 0 0 6px; display: flex; justify-content: space-between; gap: 8px; }
 .ma h3 span { font-family: var(--font-num); font-weight: 500; color: var(--muted); }
-.panel.wide .box.ma-box { height: 230px; }
+.panel.wide .box.ma-box { height: 260px; }
 .panel.wide .box.land { height: 560px; }
 @media (max-width: 760px) { .panel.wide .box.land { height: 680px; } }
 .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
@@ -112,7 +112,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <section class="panel"><h2>Medium-term trend (50)</h2><p class="sub">Breadth, 50-period</p><div class="box"><canvas id="c50"></canvas></div></section>
     <section class="panel"><h2>Long-term trend (200)</h2><p class="sub">Breadth, 200-period</p><div class="box"><canvas id="c200"></canvas></div></section>
     <section class="panel"><h2>Homma Mswing Score</h2><p class="sub">Soft score with 5-day average</p><div class="box"><canvas id="chom"></canvas></div></section>
-    <section class="panel wide" id="ma-panel"><h2>Stocks above vs below moving averages</h2><p class="sub">Number of stocks each day; green above the average, red below. % above shown for the latest day.</p><div class="ma3"><div class="ma"><h3>20 DMA <span id="ma-e20-pct"></span></h3><div class="box ma-box"><canvas id="cma-e20"></canvas></div></div><div class="ma"><h3>50 DMA <span id="ma-d50-pct"></span></h3><div class="box ma-box"><canvas id="cma-d50"></canvas></div></div><div class="ma"><h3>200 DMA <span id="ma-d200-pct"></span></h3><div class="box ma-box"><canvas id="cma-d200"></canvas></div></div></div></section>
+    <section class="panel wide" id="ma-panel"><h2>Stocks above vs below moving averages</h2><p class="sub">% of stocks above each average, with 5-day average and 80 / 50 / 20 bands</p><div class="ma3"><div class="ma"><h3>20 DMA <span id="ma-e20-pct"></span></h3><div class="box ma-box"><canvas id="cma-e20"></canvas></div></div><div class="ma"><h3>50 DMA <span id="ma-d50-pct"></span></h3><div class="box ma-box"><canvas id="cma-d50"></canvas></div></div><div class="ma"><h3>200 DMA <span id="ma-d200-pct"></span></h3><div class="box ma-box"><canvas id="cma-d200"></canvas></div></div></div></section>
     <section class="panel wide"><h2>252-day net new highs − new lows</h2><p class="sub">Percent of stocks; green above zero, red below</p><div class="box"><canvas id="cnh"></canvas></div></section>
     <section class="panel wide"><h2>Landry Momentum by sector</h2><p class="sub" id="landsub">All sectors · tap a name to hide or show it</p><div class="btns"><button type="button" id="b-all">Show all 28</button><button type="button" id="b-top">Top 6 only</button><button type="button" id="b-none">Hide all</button></div><div class="box land"><canvas id="cland"></canvas></div></section>
   </div>
@@ -207,23 +207,10 @@ function draw() {
   for (const k of ["e20", "d50", "d200"]) {
     const m = MA[k], el = document.getElementById("cma-" + k);
     if (!m || !el) continue;
-    const up = last(m.up), dn = last(m.dn);
-    document.getElementById(`ma-${k}-pct`).textContent = `${fmt(100 * up / (up + dn))}% above`;
-    const mo = base({ beginAtZero: true, stacked: true });
-    mo.scales.x.stacked = true;
-    mo.scales.x.ticks.maxTicksLimit = 5;
-    mo.plugins.tooltip.callbacks.label = c => {
-      const tot = m.up[c.dataIndex] + m.dn[c.dataIndex];
-      return ` ${c.dataset.label}: ${c.parsed.y} (${fmt(100 * c.parsed.y / tot)}%)`;
-    };
-    charts.push(new Chart(el, {
-      type: "bar",
-      data: { labels: D, datasets: [
-        { label: "Above", data: m.up, backgroundColor: css("--c-os"), borderRadius: 2 },
-        { label: "Below", data: m.dn, backgroundColor: css("--c-ob"), borderRadius: 2 }
-      ] },
-      options: mo
-    }));
+    const pct = m.up.map((u, i) => Math.round(10000 * u / (u + m.dn[i])) / 100);
+    const avg = pct.map((v, i) => i < 4 ? null : Math.round(100 * pct.slice(i - 4, i + 1).reduce((x, y) => x + y, 0) / 5) / 100);
+    document.getElementById(`ma-${k}-pct`).textContent = `${fmt(last(pct))}% above`;
+    charts.push(trend("cma-" + k, pct, avg, "% above"));
   }
   charts.push(new Chart(document.getElementById("cnh"), {
     type: "bar",
