@@ -75,6 +75,12 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .box { position: relative; height: 260px; }
 .panel.wide { grid-column: 1 / -1; }
 .panel.wide .box { height: 320px; }
+.ma3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .ma3 { grid-template-columns: minmax(0, 1fr); } }
+.ma { min-width: 0; }
+.ma h3 { font-size: 0.85rem; font-weight: 600; margin: 0 0 6px; display: flex; justify-content: space-between; gap: 8px; }
+.ma h3 span { font-family: var(--font-num); font-weight: 500; color: var(--muted); }
+.panel.wide .box.ma-box { height: 230px; }
 .panel.wide .box.land { height: 560px; }
 @media (max-width: 760px) { .panel.wide .box.land { height: 680px; } }
 .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
@@ -106,6 +112,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <section class="panel"><h2>Medium-term trend (50)</h2><p class="sub">Breadth, 50-period</p><div class="box"><canvas id="c50"></canvas></div></section>
     <section class="panel"><h2>Long-term trend (200)</h2><p class="sub">Breadth, 200-period</p><div class="box"><canvas id="c200"></canvas></div></section>
     <section class="panel"><h2>Homma Mswing Score</h2><p class="sub">Soft score with 5-day average</p><div class="box"><canvas id="chom"></canvas></div></section>
+    <section class="panel wide" id="ma-panel"><h2>Stocks above vs below moving averages</h2><p class="sub">Number of stocks each day; green above the average, red below. % above shown for the latest day.</p><div class="ma3"><div class="ma"><h3>20 DMA <span id="ma-e20-pct"></span></h3><div class="box ma-box"><canvas id="cma-e20"></canvas></div></div><div class="ma"><h3>50 DMA <span id="ma-d50-pct"></span></h3><div class="box ma-box"><canvas id="cma-d50"></canvas></div></div><div class="ma"><h3>200 DMA <span id="ma-d200-pct"></span></h3><div class="box ma-box"><canvas id="cma-d200"></canvas></div></div></div></section>
     <section class="panel wide"><h2>252-day net new highs − new lows</h2><p class="sub">Percent of stocks; green above zero, red below</p><div class="box"><canvas id="cnh"></canvas></div></section>
     <section class="panel wide"><h2>Landry Momentum by sector</h2><p class="sub" id="landsub">All sectors · tap a name to hide or show it</p><div class="btns"><button type="button" id="b-all">Show all 28</button><button type="button" id="b-top">Top 6 only</button><button type="button" id="b-none">Hide all</button></div><div class="box land"><canvas id="cland"></canvas></div></section>
   </div>
@@ -115,7 +122,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-/*DATA-START*/const DATA = {"asOf":"15 Oct 2026","dates":["17 Sep","18 Sep","21 Sep","22 Sep","23 Sep","24 Sep","25 Sep","28 Sep","29 Sep","30 Sep","1 Oct","5 Oct","6 Oct","7 Oct","8 Oct","9 Oct","12 Oct","13 Oct","14 Oct","15 Oct"],"t20":[27.9,38.2,37.94,39.2,46.82,37.55,39.25,29.16,30.19,30.86,23.51,25.1,34.11,35.61,21.27,23.91,28.26,32.31,37.99,30.88],"a20":[30.74,30.21,30.25,33.22,38.01,39.94,40.1,38.36,36.57,33.39,30.6,27.76,28.76,29.84,27.93,28,28.63,28.29,28.79,30.68],"t50":[35.2,40.06,40.32,40.5,44.95,39.46,41.07,34.08,34.18,34.23,30.09,30.59,34.27,34.58,25.57,27.02,28.47,29.36,32.92,28.5],"a50":[37.99,37.07,36.55,37.85,40.19,41.05,41.21,39.98,38.73,36.59,34.73,32.65,32.69,32.76,31.02,30.4,29.98,29.01,28.71,29.26],"t200":[47.67,50.16,49.74,49.87,51.89,49.25,49.77,46.66,46.04,45.88,43.55,43.94,45.29,45.24,42.18,42.75,43.43,44.54,45.96,44.82],"a200":[48.51,48.25,47.9,48.6,49.85,50.17,50.06,49.46,48.7,47.51,46.38,45.24,44.96,44.79,44.05,43.88,43.78,43.65,43.81,44.32],"hom":[40.58,41.61,40.63,39.88,44.38,38.27,41.27,35.78,35.27,35.68,32.88,32.09,35.4,34.47,27.02,28.42,30.8,31.8,38.66,35.6],"ahom":[39.43,38.91,38.35,39.45,41.4,40.94,40.84,39.88,38.96,37.24,36.18,34.36,34.28,34.11,32.38,31.48,31.22,30.51,31.38,33.07],"nh":[-0.53,0.6,1.18,0.98,1.96,-0.39,-0.81,-1.64,-4.37,-0.7,-5.92,-1.64,-0.04,-0.67,-5.91,-4.24,-1.29,-2,0.42,-0.04],"sectors":{"consumer discretionary":[19,23,24,23,24,21,19,20,20,21,19,18,21,22,20,20,24,21,23,24],"i.t":[13,15,15,16,17,16,15,12,13,13,11,14,15,14,12,13,15,13,17,19],"fmcg":[19,21,23,22,24,22,19,16,15,18,11,12,14,12,9,7,9,10,14,16],"industrials":[38,43,44,42,43,40,37,36,34,34,32,29,30,31,27,24,22,20,22,14],"financials":[18,19,19,19,17,15,15,12,10,9,8,8,8,9,7,7,8,10,14,13],"chemicals":[24,26,27,26,24,23,24,22,19,23,17,17,19,19,17,16,15,11,11,11],"realty":[14,14,15,17,17,19,19,17,15,18,13,13,13,15,13,14,11,12,11,11],"healthcare":[41,42,41,40,39,39,38,35,36,36,27,22,21,22,16,15,14,10,9,9],"textiles":[10,11,11,11,13,13,15,14,12,11,11,10,9,8,8,8,7,7,7,8],"metals & mining":[15,15,16,12,15,14,13,12,15,15,13,13,13,14,13,10,9,9,9,8],"aerospace & defence":[8,8,8,8,8,8,7,7,7,8,8,9,10,10,9,9,9,8,8,7],"building materials":[9,9,9,9,9,10,11,10,8,8,7,6,6,7,7,6,6,5,7,6],"services":[5,6,7,8,8,7,7,6,5,4,5,4,4,4,5,4,4,3,6,5],"transportation":[3,3,5,3,3,2,4,4,4,4,4,5,5,5,5,4,4,4,4,4],"energy":[13,14,13,11,11,9,9,9,9,9,6,6,7,7,5,6,5,3,4,4],"castings, forgings & fasteners":[2,3,2,3,3,3,3,3,2,2,3,3,3,3,3,4,4,4,4,4],"auto":[17,18,18,18,18,20,21,19,17,17,15,14,11,10,6,5,5,5,6,4],"bank":[5,4,3,3,4,2,2,0,0,1,1,1,1,2,1,1,3,2,3,4],"miscellaneous":[4,5,5,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],"media":[3,3,3,4,4,4,4,4,3,5,3,3,3,2,2,1,2,3,3,3],"plastic products":[2,1,2,2,4,4,4,4,4,4,4,4,4,4,4,3,4,3,3,3],"telecom":[0,0,0,1,2,1,1,1,1,1,2,2,2,2,1,1,1,2,2,2],"power & utilities":[0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"readymade garments/apparels":[3,3,2,3,3,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1],"n/a":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"indices":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"telecom-service":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],"co-working":[2,2,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0]}};/*DATA-END*/
+/*DATA-START*/const DATA = {"asOf":"15 Oct 2026","dates":["17 Sep","18 Sep","21 Sep","22 Sep","23 Sep","24 Sep","25 Sep","28 Sep","29 Sep","30 Sep","1 Oct","5 Oct","6 Oct","7 Oct","8 Oct","9 Oct","12 Oct","13 Oct","14 Oct","15 Oct"],"t20":[27.9,38.2,37.94,39.2,46.82,37.55,39.25,29.16,30.19,30.86,23.51,25.1,34.11,35.61,21.27,23.91,28.26,32.31,37.99,30.88],"a20":[30.74,30.21,30.25,33.22,38.01,39.94,40.1,38.36,36.57,33.39,30.6,27.76,28.76,29.84,27.93,28,28.63,28.29,28.79,30.68],"t50":[35.2,40.06,40.32,40.5,44.95,39.46,41.07,34.08,34.18,34.23,30.09,30.59,34.27,34.58,25.57,27.02,28.47,29.36,32.92,28.5],"a50":[37.99,37.07,36.55,37.85,40.19,41.05,41.21,39.98,38.73,36.59,34.73,32.65,32.69,32.76,31.02,30.4,29.98,29.01,28.71,29.26],"t200":[47.67,50.16,49.74,49.87,51.89,49.25,49.77,46.66,46.04,45.88,43.55,43.94,45.29,45.24,42.18,42.75,43.43,44.54,45.96,44.82],"a200":[48.51,48.25,47.9,48.6,49.85,50.17,50.06,49.46,48.7,47.51,46.38,45.24,44.96,44.79,44.05,43.88,43.78,43.65,43.81,44.32],"hom":[40.58,41.61,40.63,39.88,44.38,38.27,41.27,35.78,35.27,35.68,32.88,32.09,35.4,34.47,27.02,28.42,30.8,31.8,38.66,35.6],"ahom":[39.43,38.91,38.35,39.45,41.4,40.94,40.84,39.88,38.96,37.24,36.18,34.36,34.28,34.11,32.38,31.48,31.22,30.51,31.38,33.07],"nh":[-0.53,0.6,1.18,0.98,1.96,-0.39,-0.81,-1.64,-4.37,-0.7,-5.92,-1.64,-0.04,-0.67,-5.91,-4.24,-1.29,-2,0.42,-0.04],"sectors":{"consumer discretionary":[19,23,24,23,24,21,19,20,20,21,19,18,21,22,20,20,24,21,23,24],"i.t":[13,15,15,16,17,16,15,12,13,13,11,14,15,14,12,13,15,13,17,19],"fmcg":[19,21,23,22,24,22,19,16,15,18,11,12,14,12,9,7,9,10,14,16],"industrials":[38,43,44,42,43,40,37,36,34,34,32,29,30,31,27,24,22,20,22,14],"financials":[18,19,19,19,17,15,15,12,10,9,8,8,8,9,7,7,8,10,14,13],"chemicals":[24,26,27,26,24,23,24,22,19,23,17,17,19,19,17,16,15,11,11,11],"realty":[14,14,15,17,17,19,19,17,15,18,13,13,13,15,13,14,11,12,11,11],"healthcare":[41,42,41,40,39,39,38,35,36,36,27,22,21,22,16,15,14,10,9,9],"textiles":[10,11,11,11,13,13,15,14,12,11,11,10,9,8,8,8,7,7,7,8],"metals & mining":[15,15,16,12,15,14,13,12,15,15,13,13,13,14,13,10,9,9,9,8],"aerospace & defence":[8,8,8,8,8,8,7,7,7,8,8,9,10,10,9,9,9,8,8,7],"building materials":[9,9,9,9,9,10,11,10,8,8,7,6,6,7,7,6,6,5,7,6],"services":[5,6,7,8,8,7,7,6,5,4,5,4,4,4,5,4,4,3,6,5],"transportation":[3,3,5,3,3,2,4,4,4,4,4,5,5,5,5,4,4,4,4,4],"energy":[13,14,13,11,11,9,9,9,9,9,6,6,7,7,5,6,5,3,4,4],"castings, forgings & fasteners":[2,3,2,3,3,3,3,3,2,2,3,3,3,3,3,4,4,4,4,4],"auto":[17,18,18,18,18,20,21,19,17,17,15,14,11,10,6,5,5,5,6,4],"bank":[5,4,3,3,4,2,2,0,0,1,1,1,1,2,1,1,3,2,3,4],"miscellaneous":[4,5,5,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,3],"media":[3,3,3,4,4,4,4,4,3,5,3,3,3,2,2,1,2,3,3,3],"plastic products":[2,1,2,2,4,4,4,4,4,4,4,4,4,4,4,3,4,3,3,3],"telecom":[0,0,0,1,2,1,1,1,1,1,2,2,2,2,1,1,1,2,2,2],"power & utilities":[0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"readymade garments/apparels":[3,3,2,3,3,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1],"n/a":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"indices":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"telecom-service":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],"co-working":[2,2,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0]},"ma":{"e20":{"up":[768,1078,1024,1026,1269,935,978,699,730,758,592,611,831,862,500,612,692,814,953,839],"dn":[2227,1922,1852,1831,1588,1922,1878,2172,2129,2096,2265,2259,2029,1995,2361,2241,2180,2043,1904,2017]},"d50":{"up":[736,825,832,839,935,829,854,712,708,716,631,642,706,712,537,568,606,619,682,601],"dn":[1452,1367,1376,1352,1255,1363,1336,1495,1488,1476,1563,1566,1491,1484,1662,1629,1608,1580,1516,1595]},"d200":{"up":[933,983,974,971,1016,971,976,916,898,903,843,864,885,886,817,825,848,865,895,874],"dn":[1105,1054,1079,1066,1022,1068,1063,1137,1142,1141,1203,1196,1165,1163,1233,1222,1217,1187,1158,1176]}}};/*DATA-END*/
 const D = DATA.dates;
 const S = DATA;
 const NAMES = { "consumer discretionary": "Consumer discretionary", "i.t": "IT", "fmcg": "FMCG", "n/a": "N/A" };
@@ -195,6 +202,29 @@ function draw() {
   charts.push(trend("c50", S.t50, S.a50, "Medium (50)"));
   charts.push(trend("c200", S.t200, S.a200, "Long (200)"));
   charts.push(trend("chom", S.hom, S.ahom, "Homma soft"));
+  const MA = DATA.ma || {};
+  document.getElementById("ma-panel").hidden = !Object.keys(MA).length;
+  for (const k of ["e20", "d50", "d200"]) {
+    const m = MA[k], el = document.getElementById("cma-" + k);
+    if (!m || !el) continue;
+    const up = last(m.up), dn = last(m.dn);
+    document.getElementById(`ma-${k}-pct`).textContent = `${fmt(100 * up / (up + dn))}% above`;
+    const mo = base({ beginAtZero: true, stacked: true });
+    mo.scales.x.stacked = true;
+    mo.scales.x.ticks.maxTicksLimit = 5;
+    mo.plugins.tooltip.callbacks.label = c => {
+      const tot = m.up[c.dataIndex] + m.dn[c.dataIndex];
+      return ` ${c.dataset.label}: ${c.parsed.y} (${fmt(100 * c.parsed.y / tot)}%)`;
+    };
+    charts.push(new Chart(el, {
+      type: "bar",
+      data: { labels: D, datasets: [
+        { label: "Above", data: m.up, backgroundColor: css("--c-os"), borderRadius: 2 },
+        { label: "Below", data: m.dn, backgroundColor: css("--c-ob"), borderRadius: 2 }
+      ] },
+      options: mo
+    }));
+  }
   charts.push(new Chart(document.getElementById("cnh"), {
     type: "bar",
     data: { labels: D, datasets: [{ label: "Net NH − NL %", data: S.nh, backgroundColor: S.nh.map(v => v >= 0 ? css("--c-os") : css("--c-ob")), borderRadius: 2 }] },

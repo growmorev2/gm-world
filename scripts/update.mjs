@@ -45,6 +45,12 @@ async function extract() {
     t200: cut(ser['200']), a200: cut(ser['sma5(200)']), hom: cut(ser['soft']), ahom: cut(ser['sma5']),
     nh: cut(ser['net nh-nl % 252 day']), sectors: {} };
   for (const k in sectors) DATA.sectors[k] = cut(sectors[k]);
+  // Stocks above/below moving averages (optional: skipped if the widgets are removed)
+  const MA = { e20: ['above20ema', 'below20ema'], d50: ['above 50dma', 'below 50dma'], d200: ['above 200dma', 'below 200dma'] };
+  DATA.ma = {};
+  for (const [key, [u, d]] of Object.entries(MA)) {
+    if (ser[u] && ser[d] && ser[u].length >= L && ser[d].length >= L) DATA.ma[key] = { up: cut(ser[u]), dn: cut(ser[d]) };
+  }
   return DATA;
 }
 
@@ -98,7 +104,10 @@ const last = a => a[a.length - 1];
 const top = Object.entries(data.sectors).sort((a, b) => last(b[1]) - last(a[1])).slice(0, 3).map(([k, v]) => `${k} ${last(v)}`).join(', ');
 const summary = `GM World ${data.asOf}: Short 20 = ${last(data.t20)} (${zone(last(data.t20))}), Medium 50 = ${last(data.t50)} (${zone(last(data.t50))}), ` +
   `Long 200 = ${last(data.t200)} (${zone(last(data.t200))}), Homma = ${last(data.hom)} (${zone(last(data.hom))}), ` +
-  `Net NH-NL = ${last(data.nh)}% (${nhLabel(data.nh)}). Top sectors: ${top}.`;
+  `Net NH-NL = ${last(data.nh)}% (${nhLabel(data.nh)}). ` +
+  (data.ma && Object.keys(data.ma).length ? 'Stocks above ' + Object.entries({ e20: '20 DMA', d50: '50 DMA', d200: '200 DMA' })
+    .filter(([k]) => data.ma[k]).map(([k, n]) => { const u = last(data.ma[k].up), d = last(data.ma[k].dn); return `${n} ${Math.round(100 * u / (u + d))}%`; }).join(', ') + '. ' : '') +
+  `Top sectors: ${top}.`;
 
 const updated = oldAsOf !== data.asOf;
 if (!updated) {
