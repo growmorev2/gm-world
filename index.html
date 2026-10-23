@@ -82,6 +82,10 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .ma h3 { font-size: 0.85rem; font-weight: 600; margin: 0 0 6px; display: flex; justify-content: space-between; gap: 8px; }
 .ma h3 span { font-family: var(--font-num); font-weight: 500; color: var(--muted); }
 .panel.wide .box.ma-box { height: 260px; }
+.rbi-now { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 10px; font-size: 0.85rem; color: var(--muted); }
+.rbi-now b { font-family: var(--font-num); font-size: 1.15rem; font-weight: 500; color: var(--fg); margin-right: 4px; }
+.rbi-now b.t { font-family: var(--font-ui); font-size: 0.95rem; font-weight: 600; }
+.panel.wide .box.rbi-box { height: 340px; }
 .panel.wide .box.land { height: 560px; }
 @media (max-width: 760px) { .panel.wide .box.land { height: 680px; } }
 .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
@@ -116,6 +120,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <section class="panel wide" id="ma-panel"><h2>Stocks above vs below moving averages</h2><p class="sub"><span class="key2"><i class="sw" style="background:var(--c-main)"></i>Stocks above</span><span class="key2"><i class="sw" style="background:var(--c-ob)"></i>Stocks below</span></p><div class="ma3"><div class="ma"><h3>20 DMA <span id="ma-e20-pct"></span></h3><div class="box ma-box"><canvas id="cma-e20"></canvas></div></div><div class="ma"><h3>50 DMA <span id="ma-d50-pct"></span></h3><div class="box ma-box"><canvas id="cma-d50"></canvas></div></div><div class="ma"><h3>200 DMA <span id="ma-d200-pct"></span></h3><div class="box ma-box"><canvas id="cma-d200"></canvas></div></div></div></section>
     <section class="panel wide"><h2>252-day net new highs − new lows</h2><p class="sub">Percent of stocks; green above zero, red below</p><div class="box"><canvas id="cnh"></canvas></div></section>
     <section class="panel wide"><h2>Landry Momentum by sector</h2><p class="sub" id="landsub">All sectors · tap a name to hide or show it</p><div class="btns"><button type="button" id="b-all">Show all 28</button><button type="button" id="b-top">Top 6 only</button><button type="button" id="b-none">Hide all</button></div><div class="box land"><canvas id="cland"></canvas></div></section>
+    <section class="panel wide" id="rbi-panel"><h2>RBI interest rate cycles</h2><p class="sub" id="rbi-sub">Repo rate since 2008 · red bands = hiking cycles, green bands = easing cycles</p><div class="rbi-now" id="rbi-now"></div><div class="box rbi-box"><canvas id="crbi"></canvas></div></section>
   </div>
 
   <footer>Source: chartink.com/dashboard/499165 (Atlas GM WORLD). Refreshed automatically each trading day after the market close by GitHub Actions.</footer>
@@ -197,6 +202,85 @@ function trend(id, main, avg, name) {
     options: base({ min: 0, max: 100, ticks: { stepSize: 20, color: css("--muted"), font: { family: css("--font-num"), size: 11 } } })
   });
 }
+
+/* RBI repo rate history: [date, rate %]. Update when the MPC changes the rate. */
+const RBI = {
+  asOf: "23 Oct 2026",
+  nextMpc: "2–4 Dec 2026",
+  stance: "Calibrated tightening",
+  changes: [
+    ["2008-01-01", 7.75], ["2008-06-11", 8.00], ["2008-06-24", 8.50], ["2008-07-29", 9.00],
+    ["2008-10-20", 8.00], ["2008-11-03", 7.50], ["2008-12-08", 6.50], ["2009-01-05", 5.50],
+    ["2009-03-04", 5.00], ["2009-04-21", 4.75],
+    ["2010-03-19", 5.00], ["2010-04-20", 5.25], ["2010-07-02", 5.50], ["2010-07-27", 5.75],
+    ["2010-09-16", 6.00], ["2010-11-02", 6.25], ["2011-01-25", 6.50], ["2011-03-17", 6.75],
+    ["2011-05-03", 7.25], ["2011-06-16", 7.50], ["2011-07-26", 8.00], ["2011-09-16", 8.25],
+    ["2011-10-25", 8.50],
+    ["2012-04-17", 8.00], ["2013-01-29", 7.75], ["2013-03-19", 7.50], ["2013-05-03", 7.25],
+    ["2013-09-20", 7.50], ["2013-10-29", 7.75], ["2014-01-28", 8.00],
+    ["2015-01-15", 7.75], ["2015-03-04", 7.50], ["2015-06-02", 7.25], ["2015-09-29", 6.75],
+    ["2016-04-05", 6.50], ["2016-10-04", 6.25], ["2017-08-02", 6.00],
+    ["2018-06-06", 6.25], ["2018-08-01", 6.50],
+    ["2019-02-07", 6.25], ["2019-04-04", 6.00], ["2019-06-06", 5.75], ["2019-08-07", 5.40],
+    ["2019-10-04", 5.15], ["2020-03-27", 4.40], ["2020-05-22", 4.00],
+    ["2022-05-04", 4.40], ["2022-06-08", 4.90], ["2022-08-05", 5.40], ["2022-09-30", 5.90],
+    ["2022-12-07", 6.25], ["2023-02-08", 6.50],
+    ["2025-02-07", 6.25], ["2025-04-09", 6.00], ["2025-06-06", 5.50], ["2025-12-05", 5.25],
+    ["2026-10-07", 5.50]
+  ]
+};
+const yr = d => { const t = new Date(d + "T00:00:00Z"); const y = t.getUTCFullYear(); return y + (t - Date.UTC(y, 0, 1)) / (Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1)); };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const dlabel = d => { const [y, m, dd] = d.split("-"); return `${+dd} ${MON[+m - 1]} ${y}`; };
+function rbiCycles() {
+  const c = RBI.changes, out = [];
+  for (let i = 1; i < c.length; i++) {
+    const dir = Math.sign(c[i][1] - c[i - 1][1]);
+    const lastCyc = out[out.length - 1];
+    if (lastCyc && lastCyc.dir === dir) lastCyc.end = c[i][0];
+    else out.push({ dir, start: c[i][0], end: c[i][0] });
+  }
+  return out;
+}
+function rbiDraw() {
+  const c = RBI.changes, cur = c[c.length - 1], prev = c[c.length - 2];
+  const cyc = rbiCycles(), lastCyc = cyc[cyc.length - 1];
+  const phase = lastCyc.dir > 0 ? "Hiking cycle" : "Easing cycle";
+  const moves = c.filter(x => x[0] >= lastCyc.start).length;
+  document.getElementById("rbi-now").innerHTML =
+    `<span><b>${cur[1].toFixed(2)}%</b>repo rate</span>` +
+    `<span><b style="color:${lastCyc.dir > 0 ? "var(--c-ob)" : "var(--c-os)"}">${cur[1] > prev[1] ? "▲" : "▼"} ${Math.round(Math.abs(cur[1] - prev[1]) * 100)} bps</b>on ${dlabel(cur[0])}</span>` +
+    `<span><b class="t">${phase}</b>${moves} move${moves > 1 ? "s" : ""} since ${dlabel(lastCyc.start)}</span>` +
+    `<span><b class="t">${RBI.stance}</b>stance · next MPC ${RBI.nextMpc}</span>`;
+  const today = new Date(), todayY = yr(today.toISOString().slice(0, 10));
+  const pts = c.map(([d, r]) => ({ x: yr(d), y: r, d }));
+  pts.push({ x: todayY, y: cur[1], d: today.toISOString().slice(0, 10) });
+  const bands = {
+    id: "rbiBands",
+    beforeDatasetsDraw(ch) {
+      const { ctx, chartArea: a, scales: { x } } = ch;
+      ctx.save();
+      for (const b of cyc) {
+        if (!b.dir) continue;
+        const x0 = x.getPixelForValue(yr(b.start)), x1 = Math.max(x.getPixelForValue(b === lastCyc ? todayY : yr(b.end)), x0 + 4);
+        ctx.fillStyle = b.dir > 0 ? "rgba(220,38,38,0.13)" : "rgba(22,163,74,0.13)";
+        ctx.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
+      }
+      ctx.restore();
+    }
+  };
+  const o = base({ suggestedMin: 3.5, suggestedMax: 9.5, ticks: { color: css("--muted"), font: { family: css("--font-num"), size: 11 }, callback: v => v + "%" } });
+  o.interaction = { mode: "nearest", intersect: false, axis: "x" };
+  o.scales.x = { type: "linear", min: 2008, max: Math.ceil(todayY), grid: { color: css("--grid") },
+    ticks: { stepSize: 1, color: css("--muted"), maxRotation: 0, autoSkip: true, font: { family: css("--font-num"), size: 11 }, callback: v => Number.isInteger(v) ? String(v) : "" } };
+  o.plugins.tooltip.callbacks = { title: items => dlabel(items[0].raw.d), label: c2 => ` Repo rate: ${c2.parsed.y.toFixed(2)}%` };
+  charts.push(new Chart(document.getElementById("crbi"), {
+    type: "line",
+    data: { datasets: [{ label: "Repo rate", data: pts, stepped: "after", borderColor: css("--c-main"), backgroundColor: css("--c-main"), borderWidth: 2.5, pointRadius: pts.map((p, i) => i === pts.length - 1 ? 0 : 2.5), pointHoverRadius: 5 }] },
+    options: o,
+    plugins: [bands]
+  }));
+}
 function draw() {
   charts.splice(0).forEach(c => c.destroy());
   charts.push(trend("c20", S.t20, S.a20, "Short (20)"));
@@ -256,6 +340,7 @@ function draw() {
   });
   charts.push(land);
   window.__land = land;
+  rbiDraw();
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
