@@ -510,7 +510,9 @@ function sentDraw() {
   const panel = document.getElementById("sent-panel");
   if (!S.nh || !S.hom || !S.ahom) { panel.hidden = true; return; }
   const b = breadthState(), m = momentumState(), word = SENT[b.lv][m.lv];
-  document.getElementById("sent-result").innerHTML = `<span class="cond ${SENT_COL[word]}">${word}</span>`;
+  let cls = SENT_COL[word];
+  if (last(S.hom) <= 50 && (cls === "bull" || cls === "strong")) cls = "rec";  /* no green while MSWING is below 50 */
+  document.getElementById("sent-result").innerHTML = `<span class="cond ${cls}">${word}</span>`;
   const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
     `<div class="sent-box"><div class="tf">Breadth <small>NH−NL</small></div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
