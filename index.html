@@ -103,6 +103,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
 .sent-box .lv { display: flex; gap: 3px; justify-content: center; margin: 8px 0 6px; }
 .sent-box .lv i { width: 14px; height: 6px; border-radius: 2px; background: var(--grid); }
 .sent-box .st { font-size: 0.85rem; font-weight: 600; }
+.sent-box .subst { color: var(--muted); font-weight: 500; }
 .sent-box .why { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 .cyc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; }
 .cyc-head h2 { margin: 0; }
@@ -490,7 +491,7 @@ function momentumState() {
   if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-os", why: "Above 50, above avg" };
   if (v > 50)           return { lv: 1, name: "Slowing",  col: "--c-avg", why: "Above 50, below avg" };
   if (above && rising)  return { lv: 2, name: "Turning",  col: "--c-os", why: "Below 50, above avg, rising" };
-  if (above)            return { lv: 2, name: "Choppy",   col: "--c-mid", why: "Below 50, above avg, not rising" };
+  if (above)            return { lv: 2, name: "Turning",  col: "--c-os", sub: "Choppy", why: "Below 50, above avg, not rising" };
   return                  { lv: 0, name: "Negative", col: "--c-ob", why: "Below 50, below avg" };
 }
 /* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Slowing, Positive, Strong) */
@@ -510,7 +511,7 @@ function sentDraw() {
   const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
     `<div class="sent-box"><div class="tf">Breadth <small>NH−NL</small></div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
-    `<div class="sent-box"><div class="tf">Momentum <small>MSWING</small></div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}</div><div class="why">${m.why}</div></div>`;
+    `<div class="sent-box"><div class="tf">Momentum <small>MSWING</small></div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}${m.sub ? ` <span class="subst">· ${m.sub}</span>` : ""}</div><div class="why">${m.why}</div></div>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
