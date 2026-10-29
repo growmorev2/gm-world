@@ -97,8 +97,13 @@ footer { color: var(--muted); font-size: 0.78rem; }
 /* Market cycle panel: compact, one row of three */
 .top2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0; padding: 10px 0; max-width: 760px; width: 100%; box-sizing: border-box; }
 .top2 > div { padding: 0 14px; min-width: 0; }
-.top2 > div + div { border-left: 1px solid var(--line); }
-@media (max-width: 620px) { .top2 { grid-template-columns: minmax(0, 1fr); } .top2 > div + div { border-left: 0; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; } }
+.top2 > .mstat { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 14px 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.mstat .mk { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.mstat .cond { font-size: 1.15rem; font-weight: 700; padding: 3px 14px; border-radius: 8px; }
+.mstat .mm { font-size: 0.85rem; flex: 1 1 220px; min-width: 0; }
+.top2 > div + div:not(.mstat) { border-left: 1px solid var(--line); }
+.top2 > .mstat + div { border-left: 0; }
+@media (max-width: 620px) { .top2 { grid-template-columns: minmax(0, 1fr); } .top2 > div + div:not(.mstat) { border-left: 0; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; } .top2 > .mstat + div:not(.mstat) { border-top: 0; margin-top: 0; padding-top: 0; } }
 .sent-big { margin: 8px 0 8px; }
 .sent-big .cond { display: block; text-align: center; font-size: 1.4rem; font-weight: 600; padding: 4px 12px; border-radius: 8px; }
 .sent2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
@@ -140,6 +145,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
   </header>
 
   <section class="panel top2">
+    <div class="mstat" id="mstat"></div>
     <div id="cyc-panel">
       <div class="cyc-head"><h2>Market cycle</h2><span class="rv" id="cyc-result"></span></div>
       <div class="cyc3" id="cyc3"></div>
@@ -392,6 +398,7 @@ function draw() {
   rbiDraw();
   cycDraw();
   sentDraw();
+  statusDraw();
 }
 
 /* ---------- Market cycle: distance between "above" and "below" lines, crossovers, widening after a crossover ---------- */
@@ -479,6 +486,7 @@ function cycDraw() {
   const [rname, , rtext] = cycResult(S3);
   const r = document.getElementById("cyc-result");
   r.innerHTML = `<span class="cond ${cond[0]}">${cond[1]}</span><span class="xc">${nBull} of ${tot} crossover</span>`;
+  window.__cycLv = Math.min(3, Math.round(nBull * 3 / tot));
   r.title = `${rname}: ${rtext}`;
   document.getElementById("cyc3").innerHTML = CYC_TF.map(([k, n, ma], i) => {
     const c = S3[i];
@@ -521,10 +529,41 @@ function sentDraw() {
   let cls = SENT_COL[word];
   if (last(S.hom) <= 50 && (cls === "bull" || cls === "strong")) cls = "rec";  /* no green while MSWING is below 50 */
   document.getElementById("sent-result").innerHTML = `<span class="cond ${cls}">${word}</span>`;
+  window.__sentWord = word;
   const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
     `<div class="sent-box" title="${b.why}"><div class="tf">Breadth</div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
     `<div class="sent-box" title="${m.why}"><div class="tf">MSWING</div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}${m.sub ? `<span class="subst"> · ${m.sub}</span>` : ""}</div><div class="why">${m.why}</div></div>`;
+}
+
+/* ---------- Market status: Market cycle × Market sentiment ---------- */
+const SENT_GROUP = { "Bearish": 0, "Weakening": 0, "Mixed": 1, "Cautious": 1, "Recovering": 2, "Improving": 2, "Building": 2, "Bullish": 3, "Very bullish": 3 };
+/* rows = cycle (Bear, Turning, Bull, Strong bull); columns = sentiment group (Negative, Caution, Early positive, Positive) */
+const MSTAT = [
+  [["Stay out", "bear"],     ["Wait", "bear"],     ["Bottoming", "rec"],     ["Early rally", "rec"]],
+  [["Failed turn", "bear"],  ["Wait", "turn"],     ["Early uptrend", "rec"], ["Uptrend starting", "bull"]],
+  [["Correction", "turn"],   ["Pullback", "turn"], ["Uptrend", "bull"],      ["Uptrend", "bull"]],
+  [["Topping risk", "turn"], ["Pullback", "turn"], ["Uptrend", "bull"],      ["Strong uptrend", "strong"]]
+];
+const MSTAT_WHAT = {
+  "Stay out": "Everything is weak. No new trades.",
+  "Wait": "No clear direction. Wait for a crossover or better sentiment.",
+  "Bottoming": "Still below, but momentum is turning. Small test trades only.",
+  "Early rally": "No crossover yet, but sentiment is strong. Start carefully.",
+  "Failed turn": "One crossover, but sentiment is weak. It may fall back.",
+  "Early uptrend": "A new cycle is starting. Add positions slowly.",
+  "Uptrend starting": "A new cycle is starting with good sentiment. Build positions.",
+  "Uptrend": "The trend is healthy. Normal position size.",
+  "Strong uptrend": "Trend and sentiment are both strong. Full position size.",
+  "Pullback": "Trend is up but tiring. Be careful with new buys.",
+  "Correction": "Trend is up but sentiment is negative. Tighten stops, book profits.",
+  "Topping risk": "All three crossed but sentiment is negative. Tighten stops, book profits."
+};
+function statusDraw() {
+  const el = document.getElementById("mstat");
+  if (window.__cycLv == null || !window.__sentWord) { el.hidden = true; return; }
+  const [name, cls] = MSTAT[window.__cycLv][SENT_GROUP[window.__sentWord]];
+  el.innerHTML = `<span class="mk">Market status</span><span class="cond ${cls}">${name}</span><span class="mm">${MSTAT_WHAT[name]}</span>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
