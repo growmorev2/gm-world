@@ -488,7 +488,8 @@ function breadthState() {
 }
 function momentumState() {
   const v = last(S.hom), avg = last(S.ahom), above = v > avg, rising = v > S.hom[S.hom.length - 2];
-  if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-os", why: "Above 50, above avg" };
+  if (v > 50 && above && rising) return { lv: 3, name: "Strong", col: "--c-os", why: "Above 50, above avg, rising" };
+  if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-os", sub: "Choppy", why: "Above 50, above avg, not rising" };
   if (v > 50)           return { lv: 1, name: "Slowing",  col: "--c-avg", why: "Above 50, below avg" };
   if (above && rising)  return { lv: 2, name: "Turning",  col: "--c-os", why: "Below 50, above avg, rising" };
   if (above)            return { lv: 2, name: "Turning",  col: "--c-os", sub: "Choppy", why: "Below 50, above avg, not rising" };
