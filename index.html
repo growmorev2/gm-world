@@ -97,7 +97,12 @@ footer { color: var(--muted); font-size: 0.78rem; }
 /* Market cycle panel: compact, one row of three */
 #cyc-panel, #sent-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
 .top2 { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
-.sent2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sent-big { margin: 10px 0 12px; }
+.sent-big .cond { display: inline-block; font-size: 1.6rem; font-weight: 600; padding: 4px 16px; border-radius: 10px; }
+.sent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip2 { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+.chip2 b { font-weight: 600; }
+.chip2 .subst { color: var(--muted); }
 .sent-box { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; text-align: center; }
 .sent-box .tf { font-size: 0.78rem; font-weight: 600; }
 .sent-box .tf small { font-weight: 500; color: var(--muted); }
@@ -110,12 +115,12 @@ footer { color: var(--muted); font-size: 0.78rem; }
 .cyc-head h2 { margin: 0; }
 .cyc-head .rv { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
 .cyc-head .cond { font-weight: 600; padding: 2px 10px; border-radius: 999px; }
-.cyc-head .cond.bull { background: color-mix(in srgb, var(--c-os) 16%, transparent); color: var(--c-os); }
-.cyc-head .cond.bear { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
-.cyc-head .cond.strong { background: var(--c-os); color: #fff; }
-.cyc-head .cond.turn { background: color-mix(in srgb, var(--c-avg) 18%, transparent); color: var(--c-avg); }
-.cyc-head .cond.neutral { background: color-mix(in srgb, var(--c-mid) 18%, transparent); color: var(--muted); }
-.cyc-head .cond.rec { background: color-mix(in srgb, var(--c-main) 15%, transparent); color: var(--c-main); }
+.cond.bull { background: color-mix(in srgb, var(--c-os) 16%, transparent); color: var(--c-os); }
+.cond.bear { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
+.cond.strong { background: var(--c-os); color: #fff; }
+.cond.turn { background: color-mix(in srgb, var(--c-avg) 18%, transparent); color: var(--c-avg); }
+.cond.neutral { background: color-mix(in srgb, var(--c-mid) 18%, transparent); color: var(--muted); }
+.cond.rec { background: color-mix(in srgb, var(--c-main) 15%, transparent); color: var(--c-main); }
 .cyc-head .xc { color: var(--muted); font-weight: 500; }
 .cyc3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cyc-card { text-align: center; min-width: 0; }
@@ -138,8 +143,9 @@ footer { color: var(--muted); font-size: 0.78rem; }
       <div class="cyc3" id="cyc3"></div>
     </section>
     <section class="panel" id="sent-panel">
-      <div class="cyc-head"><h2>Market sentiment</h2><span class="rv" id="sent-result"></span></div>
-      <div class="sent2" id="sent2"></div>
+      <h2>Market sentiment</h2>
+      <div class="sent-big" id="sent-result"></div>
+      <div class="sent-chips" id="sent2"></div>
     </section>
   </div>
 
@@ -513,10 +519,9 @@ function sentDraw() {
   let cls = SENT_COL[word];
   if (last(S.hom) <= 50 && (cls === "bull" || cls === "strong")) cls = "rec";  /* no green while MSWING is below 50 */
   document.getElementById("sent-result").innerHTML = `<span class="cond ${cls}">${word}</span>`;
-  const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
-    `<div class="sent-box"><div class="tf">Breadth <small>NH−NL</small></div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
-    `<div class="sent-box"><div class="tf">Momentum <small>MSWING</small></div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}${m.sub ? ` <span class="subst">· ${m.sub}</span>` : ""}</div><div class="why">${m.why}</div></div>`;
+    `<span class="chip2" title="${b.why}">Breadth <b style="color:var(${b.col})">${b.name}</b></span>` +
+    `<span class="chip2" title="${m.why}">MSWING <b style="color:var(${m.col})">${m.name}</b>${m.sub ? ` <span class="subst">· ${m.sub}</span>` : ""}</span>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
