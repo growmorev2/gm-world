@@ -95,9 +95,10 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .btns button:focus-visible { outline: 2px solid var(--c-main); outline-offset: 2px; }
 footer { color: var(--muted); font-size: 0.78rem; }
 /* Market cycle panel: compact, one row of three */
-#cyc-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
-#sent-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
-.top2 { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.top2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0; padding: 10px 0; max-width: 760px; width: 100%; box-sizing: border-box; }
+.top2 > div { padding: 0 14px; min-width: 0; }
+.top2 > div + div { border-left: 1px solid var(--line); }
+@media (max-width: 620px) { .top2 { grid-template-columns: minmax(0, 1fr); } .top2 > div + div { border-left: 0; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; } }
 .sent-big { margin: 8px 0 8px; }
 .sent-big .cond { display: block; text-align: center; font-size: 1.4rem; font-weight: 600; padding: 4px 12px; border-radius: 8px; }
 .sent2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
@@ -138,17 +139,17 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <p id="hdr">Chartink dashboard 499165</p>
   </header>
 
-  <div class="top2">
-    <section class="panel" id="cyc-panel">
+  <section class="panel top2">
+    <div id="cyc-panel">
       <div class="cyc-head"><h2>Market cycle</h2><span class="rv" id="cyc-result"></span></div>
       <div class="cyc3" id="cyc3"></div>
-    </section>
-    <section class="panel" id="sent-panel">
+    </div>
+    <div id="sent-panel">
       <h2>Market sentiment</h2>
       <div class="sent-big" id="sent-result"></div>
       <div class="sent2" id="sent2"></div>
-    </section>
-  </div>
+    </div>
+  </section>
 
   <div class="strip" id="strip"></div>
 
