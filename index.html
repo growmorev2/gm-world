@@ -96,7 +96,7 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 footer { color: var(--muted); font-size: 0.78rem; }
 /* Market cycle panel: compact, one row of three */
 #cyc-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
-#sent-panel { padding: 10px 12px; max-width: 240px; width: 100%; box-sizing: border-box; }
+#sent-panel { padding: 10px 12px; max-width: 280px; width: 100%; box-sizing: border-box; }
 .top2 { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
 .sent-big { margin: 8px 0 8px; }
 .sent-big .cond { display: block; text-align: center; font-size: 1.4rem; font-weight: 600; padding: 4px 12px; border-radius: 8px; }
@@ -111,7 +111,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
 .sent-box .lv i { width: 10px; height: 4px; border-radius: 2px; background: var(--grid); }
 .sent-box .st { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sent-box .subst { color: var(--muted); font-weight: 500; }
-.sent-box .why { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.sent-box .why { font-size: 0.66rem; line-height: 1.3; color: var(--muted); margin-top: 2px; }
 .cyc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; }
 .cyc-head h2 { margin: 0; }
 .cyc-head .rv { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
@@ -522,8 +522,8 @@ function sentDraw() {
   document.getElementById("sent-result").innerHTML = `<span class="cond ${cls}">${word}</span>`;
   const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
-    `<div class="sent-box" title="${b.why}"><div class="tf">Breadth</div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div></div>` +
-    `<div class="sent-box" title="${m.why}"><div class="tf">MSWING</div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}${m.sub ? `<span class="subst"> · ${m.sub}</span>` : ""}</div></div>`;
+    `<div class="sent-box" title="${b.why}"><div class="tf">Breadth</div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
+    `<div class="sent-box" title="${m.why}"><div class="tf">MSWING</div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}${m.sub ? `<span class="subst"> · ${m.sub}</span>` : ""}</div><div class="why">${m.why}</div></div>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
