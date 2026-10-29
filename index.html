@@ -94,7 +94,16 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .btns button:focus-visible { outline: 2px solid var(--c-main); outline-offset: 2px; }
 footer { color: var(--muted); font-size: 0.78rem; }
 /* Market cycle panel: compact, one row of three */
-#cyc-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
+#cyc-panel, #sent-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
+.top2 { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.sent2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sent-box { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; text-align: center; }
+.sent-box .tf { font-size: 0.78rem; font-weight: 600; }
+.sent-box .tf small { font-weight: 500; color: var(--muted); }
+.sent-box .lv { display: flex; gap: 3px; justify-content: center; margin: 8px 0 6px; }
+.sent-box .lv i { width: 14px; height: 6px; border-radius: 2px; background: var(--grid); }
+.sent-box .st { font-size: 0.85rem; font-weight: 600; }
+.sent-box .why { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 .cyc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; }
 .cyc-head h2 { margin: 0; }
 .cyc-head .rv { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
@@ -103,6 +112,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
 .cyc-head .cond.bear { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
 .cyc-head .cond.strong { background: var(--c-os); color: #fff; }
 .cyc-head .cond.turn { background: color-mix(in srgb, var(--c-avg) 18%, transparent); color: var(--c-avg); }
+.cyc-head .cond.neutral { background: color-mix(in srgb, var(--c-mid) 18%, transparent); color: var(--muted); }
 .cyc-head .xc { color: var(--muted); font-weight: 500; }
 .cyc3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cyc-card { text-align: center; min-width: 0; }
@@ -119,10 +129,16 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <p id="hdr">Chartink dashboard 499165</p>
   </header>
 
-  <section class="panel" id="cyc-panel">
-    <div class="cyc-head"><h2>Market cycle</h2><span class="rv" id="cyc-result"></span></div>
-    <div class="cyc3" id="cyc3"></div>
-  </section>
+  <div class="top2">
+    <section class="panel" id="cyc-panel">
+      <div class="cyc-head"><h2>Market cycle</h2><span class="rv" id="cyc-result"></span></div>
+      <div class="cyc3" id="cyc3"></div>
+    </section>
+    <section class="panel" id="sent-panel">
+      <div class="cyc-head"><h2>Market sentiment</h2><span class="rv" id="sent-result"></span></div>
+      <div class="sent2" id="sent2"></div>
+    </section>
+  </div>
 
   <div class="strip" id="strip"></div>
 
@@ -364,6 +380,7 @@ function draw() {
   window.__land = land;
   rbiDraw();
   cycDraw();
+  sentDraw();
 }
 
 /* ---------- Market cycle: distance between "above" and "below" lines, crossovers, widening after a crossover ---------- */
@@ -458,6 +475,42 @@ function cycDraw() {
     const st = ST[c.cur.st];
     return `<div class="cyc-card" title="${c.how}"><div class="tf">${n} <small>${ma.split(" ")[0]}</small></div>${wheelSvg(c.pts)}<div class="st" style="color:var(${st.col})">${st.name}</div></div>`;
   }).join("");
+}
+
+/* ---------- Market sentiment: breadth (net new highs − new lows) × momentum (Homma MSWING) ---------- */
+function breadthState() {
+  const v = S.nh, n = last(v), pos3 = v.length >= 3 && v.slice(-3).every(x => x > 0);
+  if (pos3 && n > 5) return { lv: 3, name: "Strong",    col: "--c-os", why: "Positive 3 days, above 5%" };
+  if (pos3)          return { lv: 2, name: "Healthy",   col: "--c-os", why: "Positive 3 days in a row" };
+  if (n > 0)         return { lv: 1, name: "Improving", col: "--c-os", why: "Positive today" };
+  return               { lv: 0, name: "Weak",      col: "--c-ob", why: "More new lows than highs" };
+}
+function momentumState() {
+  const h = S.hom, a = S.ahom, v = last(h), avg = last(a), rising = v > h[h.length - 2];
+  if (v > avg && rising && v > 50) return { lv: 4, name: "Strong",   col: "--c-os", why: "Above avg, rising, above 50" };
+  if (v > avg && rising)           return { lv: 3, name: "Positive", col: "--c-os", why: "Above avg and rising" };
+  if (v > avg)                     return { lv: 2, name: "Slowing",  col: "--c-mid", why: "Above avg but not rising" };
+  if (v > 50)                      return { lv: 1, name: "Caution",  col: "--c-avg", why: "Below avg, still above 50" };
+  return                             { lv: 0, name: "Negative", col: "--c-ob", why: "Below avg and below 50" };
+}
+/* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Caution, Slowing, Positive, Strong) */
+const SENT = [
+  ["Bearish", "Weakening", "Weak",     "Recovering", "Recovering"],
+  ["Mixed",   "Cautious",  "Neutral",  "Improving",  "Improving"],
+  ["Mixed",   "Cautious",  "Positive", "Bullish",    "Bullish"],
+  ["Mixed",   "Cautious",  "Positive", "Bullish",    "Very bullish"]
+];
+const SENT_COL = { "Bearish": "bear", "Weakening": "bear", "Weak": "bear", "Mixed": "turn", "Cautious": "turn", "Neutral": "neutral",
+  "Recovering": "bull", "Improving": "bull", "Positive": "bull", "Bullish": "bull", "Very bullish": "strong" };
+function sentDraw() {
+  const panel = document.getElementById("sent-panel");
+  if (!S.nh || !S.hom || !S.ahom) { panel.hidden = true; return; }
+  const b = breadthState(), m = momentumState(), word = SENT[b.lv][m.lv];
+  document.getElementById("sent-result").innerHTML = `<span class="cond ${SENT_COL[word]}">${word}</span>`;
+  const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
+  document.getElementById("sent2").innerHTML =
+    `<div class="sent-box"><div class="tf">Breadth <small>NH−NL</small></div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
+    `<div class="sent-box"><div class="tf">Momentum <small>MSWING</small></div><div class="lv">${bars(m.lv, 5, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}</div><div class="why">${m.why}</div></div>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
