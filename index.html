@@ -486,22 +486,21 @@ function breadthState() {
   return               { lv: 0, name: "Weak",      col: "--c-ob", why: "More new lows than highs" };
 }
 function momentumState() {
-  const h = S.hom, a = S.ahom, v = last(h), avg = last(a), rising = v > h[h.length - 2];
-  if (v > avg && rising && v > 50) return { lv: 4, name: "Strong",   col: "--c-os", why: "Above avg, rising, above 50" };
-  if (v > avg && rising)           return { lv: 3, name: "Positive", col: "--c-os", why: "Above avg and rising" };
-  if (v > avg)                     return { lv: 2, name: "Slowing",  col: "--c-mid", why: "Above avg but not rising" };
-  if (v > 50)                      return { lv: 1, name: "Caution",  col: "--c-avg", why: "Below avg, still above 50" };
-  return                             { lv: 0, name: "Negative", col: "--c-ob", why: "Below avg and below 50" };
+  const v = last(S.hom), avg = last(S.ahom), above = v > avg;
+  if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-os", why: "Above 50, above avg" };
+  if (v > 50)           return { lv: 1, name: "Caution",  col: "--c-avg", why: "Above 50, below avg" };
+  if (above)            return { lv: 2, name: "Positive", col: "--c-os", why: "Below 50, above avg" };
+  return                  { lv: 0, name: "Negative", col: "--c-ob", why: "Below 50, below avg" };
 }
-/* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Caution, Slowing, Positive, Strong) */
+/* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Caution, Positive, Strong) */
 const SENT = [
-  ["Bearish", "Weakening", "Weak",     "Recovering", "Recovering"],
-  ["Mixed",   "Cautious",  "Neutral",  "Improving",  "Improving"],
-  ["Mixed",   "Cautious",  "Positive", "Bullish",    "Bullish"],
-  ["Mixed",   "Cautious",  "Positive", "Bullish",    "Very bullish"]
+  ["Bearish", "Weakening", "Recovering", "Recovering"],
+  ["Mixed",   "Cautious",  "Improving",  "Improving"],
+  ["Mixed",   "Cautious",  "Bullish",    "Bullish"],
+  ["Mixed",   "Cautious",  "Bullish",    "Very bullish"]
 ];
-const SENT_COL = { "Bearish": "bear", "Weakening": "bear", "Weak": "bear", "Mixed": "turn", "Cautious": "turn", "Neutral": "neutral",
-  "Recovering": "bull", "Improving": "bull", "Positive": "bull", "Bullish": "bull", "Very bullish": "strong" };
+const SENT_COL = { "Bearish": "bear", "Weakening": "bear", "Mixed": "turn", "Cautious": "turn",
+  "Recovering": "bull", "Improving": "bull", "Bullish": "bull", "Very bullish": "strong" };
 function sentDraw() {
   const panel = document.getElementById("sent-panel");
   if (!S.nh || !S.hom || !S.ahom) { panel.hidden = true; return; }
@@ -510,7 +509,7 @@ function sentDraw() {
   const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
     `<div class="sent-box"><div class="tf">Breadth <small>NH−NL</small></div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div><div class="why">${b.why}</div></div>` +
-    `<div class="sent-box"><div class="tf">Momentum <small>MSWING</small></div><div class="lv">${bars(m.lv, 5, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}</div><div class="why">${m.why}</div></div>`;
+    `<div class="sent-box"><div class="tf">Momentum <small>MSWING</small></div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}</div><div class="why">${m.why}</div></div>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
