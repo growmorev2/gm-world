@@ -23,6 +23,7 @@
   --c-ob: #DC2626;
   --c-mid: #7A8594;
   --c-os: #16A34A;
+  --c-dg: #166534;
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
@@ -30,13 +31,13 @@
   :root:not([data-theme="light"]) {
     --bg: #0F141B; --panel: #161D26; --fg: #E6EBF1; --muted: #93A0AF;
     --line: #26303C; --grid: #212A35; --c-main: #4C8DFF; --c-avg: #FFA126;
-    --c-ob: #F05252; --c-mid: #8D98A6; --c-os: #2FBF63; color-scheme: dark;
+    --c-ob: #F05252; --c-mid: #8D98A6; --c-os: #2FBF63; --c-dg: #6EE7A0; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0F141B; --panel: #161D26; --fg: #E6EBF1; --muted: #93A0AF;
   --line: #26303C; --grid: #212A35; --c-main: #4C8DFF; --c-avg: #FFA126;
-  --c-ob: #F05252; --c-mid: #8D98A6; --c-os: #2FBF63; color-scheme: dark;
+  --c-ob: #F05252; --c-mid: #8D98A6; --c-os: #2FBF63; --c-dg: #6EE7A0; color-scheme: dark;
 }
 body {
   background: var(--bg); color: var(--fg); font-family: var(--font-ui);
@@ -488,8 +489,8 @@ function breadthState() {
 }
 function momentumState() {
   const v = last(S.hom), avg = last(S.ahom), above = v > avg, rising = v > S.hom[S.hom.length - 2];
-  if (v > 50 && above && rising) return { lv: 3, name: "Strong", col: "--c-os", why: "Above 50, above avg, rising" };
-  if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-os", sub: "Choppy", why: "Above 50, above avg, not rising" };
+  if (v > 50 && above && rising) return { lv: 3, name: "Strong", col: "--c-dg", why: "Above 50, above avg, rising" };
+  if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-dg", sub: "Choppy", why: "Above 50, above avg, not rising" };
   if (v > 50)           return { lv: 1, name: "Slowing",  col: "--c-avg", why: "Above 50, below avg" };
   if (above && rising)  return { lv: 2, name: "Turning",  col: "--c-os", why: "Below 50, above avg, rising" };
   if (above)            return { lv: 2, name: "Turning",  col: "--c-os", sub: "Choppy", why: "Below 50, above avg, not rising" };
