@@ -488,11 +488,11 @@ function breadthState() {
 function momentumState() {
   const v = last(S.hom), avg = last(S.ahom), above = v > avg;
   if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-os", why: "Above 50, above avg" };
-  if (v > 50)           return { lv: 1, name: "Caution",  col: "--c-avg", why: "Above 50, below avg" };
+  if (v > 50)           return { lv: 1, name: "Slowing",  col: "--c-avg", why: "Above 50, below avg" };
   if (above)            return { lv: 2, name: "Positive", col: "--c-os", why: "Below 50, above avg" };
   return                  { lv: 0, name: "Negative", col: "--c-ob", why: "Below 50, below avg" };
 }
-/* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Caution, Positive, Strong) */
+/* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Slowing, Positive, Strong) */
 const SENT = [
   ["Bearish", "Weakening", "Recovering", "Recovering"],
   ["Mixed",   "Cautious",  "Improving",  "Improving"],
