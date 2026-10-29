@@ -95,20 +95,21 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .btns button:focus-visible { outline: 2px solid var(--c-main); outline-offset: 2px; }
 footer { color: var(--muted); font-size: 0.78rem; }
 /* Market cycle panel: compact, one row of three */
-#cyc-panel, #sent-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
+#cyc-panel { padding: 10px 12px; max-width: 380px; width: 100%; box-sizing: border-box; }
+#sent-panel { padding: 10px 12px; max-width: 240px; width: 100%; box-sizing: border-box; }
 .top2 { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
-.sent-big { margin: 10px 0 12px; }
-.sent-big .cond { display: inline-block; font-size: 1.6rem; font-weight: 600; padding: 4px 16px; border-radius: 10px; }
-.sent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sent-big { margin: 8px 0 8px; }
+.sent-big .cond { display: block; text-align: center; font-size: 1.4rem; font-weight: 600; padding: 4px 12px; border-radius: 8px; }
+.sent2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .chip2 { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
 .chip2 b { font-weight: 600; }
 .chip2 .subst { color: var(--muted); }
-.sent-box { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; text-align: center; }
-.sent-box .tf { font-size: 0.78rem; font-weight: 600; }
+.sent-box { border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; min-width: 0; text-align: center; }
+.sent-box .tf { font-size: 0.7rem; font-weight: 600; color: var(--muted); }
 .sent-box .tf small { font-weight: 500; color: var(--muted); }
-.sent-box .lv { display: flex; gap: 3px; justify-content: center; margin: 8px 0 6px; }
-.sent-box .lv i { width: 14px; height: 6px; border-radius: 2px; background: var(--grid); }
-.sent-box .st { font-size: 0.85rem; font-weight: 600; }
+.sent-box .lv { display: flex; gap: 2px; justify-content: center; margin: 4px 0 3px; }
+.sent-box .lv i { width: 10px; height: 4px; border-radius: 2px; background: var(--grid); }
+.sent-box .st { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sent-box .subst { color: var(--muted); font-weight: 500; }
 .sent-box .why { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 .cyc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; }
@@ -145,7 +146,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <section class="panel" id="sent-panel">
       <h2>Market sentiment</h2>
       <div class="sent-big" id="sent-result"></div>
-      <div class="sent-chips" id="sent2"></div>
+      <div class="sent2" id="sent2"></div>
     </section>
   </div>
 
@@ -519,9 +520,10 @@ function sentDraw() {
   let cls = SENT_COL[word];
   if (last(S.hom) <= 50 && (cls === "bull" || cls === "strong")) cls = "rec";  /* no green while MSWING is below 50 */
   document.getElementById("sent-result").innerHTML = `<span class="cond ${cls}">${word}</span>`;
+  const bars = (lv, max, col) => Array.from({ length: max }, (_, i) => `<i style="${i <= lv ? `background:var(${col})` : ""}"></i>`).join("");
   document.getElementById("sent2").innerHTML =
-    `<span class="chip2" title="${b.why}">Breadth <b style="color:var(${b.col})">${b.name}</b></span>` +
-    `<span class="chip2" title="${m.why}">MSWING <b style="color:var(${m.col})">${m.name}</b>${m.sub ? ` <span class="subst">· ${m.sub}</span>` : ""}</span>`;
+    `<div class="sent-box" title="${b.why}"><div class="tf">Breadth</div><div class="lv">${bars(b.lv, 4, b.col)}</div><div class="st" style="color:var(${b.col})">${b.name}</div></div>` +
+    `<div class="sent-box" title="${m.why}"><div class="tf">MSWING</div><div class="lv">${bars(m.lv, 4, m.col)}</div><div class="st" style="color:var(${m.col})">${m.name}${m.sub ? `<span class="subst"> · ${m.sub}</span>` : ""}</div></div>`;
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
