@@ -103,10 +103,6 @@ footer { color: var(--muted); font-size: 0.78rem; }
 .cyc-head .cond.bear { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
 .cyc-head .cond.strong { background: var(--c-os); color: #fff; }
 .cyc-head .cond.turn { background: color-mix(in srgb, var(--c-avg) 18%, transparent); color: var(--c-avg); }
-.cyc-head .rv { flex-wrap: wrap; }
-.cyc-head .sub-sig { font-size: 0.8rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px dashed; }
-.cyc-head .sub-sig.up { color: var(--c-os); border-color: color-mix(in srgb, var(--c-os) 60%, transparent); }
-.cyc-head .sub-sig.dn { color: var(--c-avg); border-color: color-mix(in srgb, var(--c-avg) 60%, transparent); }
 .cyc-head .xc { color: var(--muted); font-weight: 500; }
 .cyc3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cyc-card { text-align: center; min-width: 0; }
@@ -454,15 +450,7 @@ function cycDraw() {
   const cond = nBull === tot ? ["strong", "Strong bull"] : nBull * 2 > tot ? ["bull", "Bull condition"] : nBull > 0 ? ["turn", "Turning"] : ["bear", "Bear condition"];
   const [rname, , rtext] = cycResult(S3);
   const r = document.getElementById("cyc-result");
-  /* sub signals: gap reducing on a timeframe that has not crossed yet (next crossover building),
-     or on one that has crossed (weakening, a cross back may come) */
-  const nm = i => CYC_TF[i][1];
-  const toBull = S3.map((c, i) => c && c.cur.p < 50 && c.cur.blueGain ? nm(i) : null).filter(Boolean);
-  const toBear = S3.map((c, i) => c && c.cur.p >= 50 && !c.cur.blueGain ? nm(i) : null).filter(Boolean);
-  let sub = "";
-  if (toBull.length) sub += `<span class="sub-sig up">▲ Gap reducing: ${toBull.join(", ")}</span>`;
-  if (toBear.length) sub += `<span class="sub-sig dn">▼ Gap reducing: ${toBear.join(", ")}</span>`;
-  r.innerHTML = `<span class="cond ${cond[0]}">${cond[1]}</span><span class="xc">${nBull} of ${tot} crossover</span>${sub}`;
+  r.innerHTML = `<span class="cond ${cond[0]}">${cond[1]}</span><span class="xc">${nBull} of ${tot} crossover</span>`;
   r.title = `${rname}: ${rtext}`;
   document.getElementById("cyc3").innerHTML = CYC_TF.map(([k, n, ma], i) => {
     const c = S3[i];
