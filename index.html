@@ -93,6 +93,22 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 .btns button:hover { border-color: var(--c-main); }
 .btns button:focus-visible { outline: 2px solid var(--c-main); outline-offset: 2px; }
 footer { color: var(--muted); font-size: 0.78rem; }
+/* Market cycle panel: compact, one row of three */
+#cyc-panel { padding: 10px 12px; max-width: 520px; width: 100%; box-sizing: border-box; }
+.cyc-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; }
+.cyc-head h2 { margin: 0; }
+.cyc-head .rv { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.cyc-head .cond { font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+.cyc-head .cond.bull { background: color-mix(in srgb, var(--c-os) 16%, transparent); color: var(--c-os); }
+.cyc-head .cond.bear { background: color-mix(in srgb, var(--c-ob) 16%, transparent); color: var(--c-ob); }
+.cyc-head .cond.turn { background: color-mix(in srgb, var(--c-avg) 18%, transparent); color: var(--c-avg); }
+.cyc-head .xc { color: var(--muted); font-weight: 500; }
+.cyc3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cyc-card { text-align: center; min-width: 0; }
+.cyc-card .tf { font-size: 0.78rem; font-weight: 600; }
+.cyc-card .tf small { font-weight: 500; color: var(--muted); }
+.cyc-card svg { display: block; width: 100%; max-width: 130px; height: auto; margin: 2px auto; }
+.cyc-card .st { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
@@ -101,6 +117,11 @@ footer { color: var(--muted); font-size: 0.78rem; }
     <h1>GM World market breadth</h1>
     <p id="hdr">Chartink dashboard 499165</p>
   </header>
+
+  <section class="panel" id="cyc-panel">
+    <div class="cyc-head"><h2>Market cycle</h2><span class="rv" id="cyc-result"></span></div>
+    <div class="cyc3" id="cyc3"></div>
+  </section>
 
   <div class="strip" id="strip"></div>
 
@@ -341,6 +362,101 @@ function draw() {
   charts.push(land);
   window.__land = land;
   rbiDraw();
+  cycDraw();
+}
+
+/* ---------- Market cycle: distance between "above" and "below" lines, crossovers, widening after a crossover ---------- */
+const CYC_TF = [["e20", "Short", "20 EMA"], ["d50", "Medium", "50 DMA"], ["d200", "Long", "200 DMA"]];
+const CYC_LOOK = 3;   /* sessions used to judge whether the distance is reducing or widening */
+const CYC_FRESH = 3;  /* a crossover within this many sessions is shown as the status itself */
+const ST = {
+  down:  { name: "Markdown",          col: "--c-ob",  score: -2, how: "Red line leads · distance widening" },
+  acc:   { name: "Accumulation",      col: "--c-os",  score: -1, how: "Red line leads · distance reducing" },
+  xbull: { name: "Bull crossover", col: "--c-os",  score: 1,  how: "Blue line just crossed above the red" },
+  up:    { name: "Markup",            col: "--c-main", score: 2, how: "Blue line leads · distance widening" },
+  dist:  { name: "Distribution",      col: "--c-avg", score: 1,  how: "Blue line leads · distance reducing" },
+  xbear: { name: "Bear crossover", col: "--c-ob",  score: -1, how: "Red line just crossed above the blue" }
+};
+function cycSeries(k) {
+  const m = (DATA.ma || {})[k];
+  if (!m) return null;
+  const spread = m.up.map((u, i) => (u + m.dn[i]) ? 100 * (u - m.dn[i]) / (u + m.dn[i]) : 0);  /* + = blue leads */
+  let prev = true, lastX = null;
+  const pts = spread.map((s, i) => {
+    const d = s - spread[Math.max(0, i - CYC_LOOK)];
+    const blueGain = d > 0 ? true : d < 0 ? false : prev;
+    prev = blueGain;
+    if (i > 0 && (spread[i - 1] < 0) !== (s < 0)) lastX = { i, bull: s >= 0 };
+    let st = s >= 0 ? (blueGain ? "up" : "dist") : (blueGain ? "acc" : "down");
+    if (lastX && i - lastX.i < CYC_FRESH) st = lastX.bull ? "xbull" : "xbear";
+    return { p: 50 + s / 2, blueGain, st };
+  });
+  const N = pts.length, cur = pts[N - 1];
+  let how = ST[cur.st].how;
+  if (lastX && (cur.st === "up" || cur.st === "down")) how += ` after the ${lastX.bull ? "bullish" : "bearish"} crossover on ${D[lastX.i]}`;
+  else if (lastX && cur.st.startsWith("x")) how += ` on ${D[lastX.i]}`;
+  else if (!lastX) how += ` · no crossover in the last ${N} sessions`;
+  return { pts, cur, lastX, how };
+}
+function wheelSvg(pts) {
+  const W = 120, cx = 60, cy = 60, r = 48;
+  const pos = p => {
+    const yu = Math.max(-0.999, Math.min(0.999, p.p / 50 - 1));
+    return [cx + Math.sqrt(1 - yu * yu) * r * (p.blueGain ? -1 : 1), cy - yu * r];
+  };
+  const arc = (a0, a1, col) => {
+    const P = a => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+    const [x0, y0] = P(a0), [x1, y1] = P(a1);
+    return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="var(${col})" stroke-width="7" stroke-opacity="0.85"/>`;
+  };
+  const g = 0.05, H = Math.PI / 2;
+  let s = `<svg viewBox="0 0 ${W} ${W}" role="img" aria-label="Cycle wheel: Accumulation bottom-left, Markup top-left, Distribution top-right, Markdown bottom-right">`;
+  s += `<line x1="${cx - r}" y1="${cy}" x2="${cx + r}" y2="${cy}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  s += arc(H + g, 2 * H - g, ST.acc.col) + arc(2 * H + g, 3 * H - g, ST.up.col) + arc(3 * H + g, 4 * H - g, ST.dist.col) + arc(g, H - g, ST.down.col);
+  const trail = pts.slice(-6), xy = trail.map(pos);
+  xy.forEach(([x, y], i) => {
+    const lastPt = i === xy.length - 1;
+    s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${lastPt ? 6 : 2.5}" fill="var(${ST[trail[i].st].col})" fill-opacity="${lastPt ? 1 : 0.25 + 0.5 * i / xy.length}" ${lastPt ? 'stroke="var(--panel)" stroke-width="2"' : ""}><title>${ST[trail[i].st].name}</title></circle>`;
+  });
+  return s + "</svg>";
+}
+/* compare the three timeframes → one result */
+function cycResult(S3) {
+  const [sh, md, lg] = S3.map(x => x ? x.cur.st : null);
+  const bull = st => ["xbull", "up"].includes(st), bear = st => ["xbear", "down"].includes(st);
+  const all = (...a) => S3.every(x => x && a.includes(x.cur.st));
+  const score = S3.reduce((t, x) => t + (x ? ST[x.cur.st].score : 0), 0);
+  if (all("up")) return ["Strong uptrend", "--c-main", "Blue line leads and the distance is widening on all three. The trend is healthy across short, medium and long term."];
+  if (all("down")) return ["Downtrend", "--c-ob", "Red line leads and the distance is widening on all three. Protect capital; avoid new positions until the distance starts reducing."];
+  if (all("acc")) return ["Bottoming", "--c-os", "Red line still leads on all three, but the distance is reducing on all three. No crossover yet; the short term (20) crossing first would be the early sign."];
+  if (all("dist", "xbear")) return ["Topping", "--c-avg", "Blue line leads but the distance is reducing on all three. Tighten stops; a bearish crossover on the 50 would confirm."];
+  if (bull(sh) && bull(md) && !bull(lg)) return ["Uptrend building", "--c-main", "Short and medium have crossed bullish; the long term (200) has not yet. A long-term crossover would confirm a new cycle."];
+  if (bull(sh) && !bull(md)) return ["Early recovery", "--c-os", "Only the short term (20) has turned bullish. Medium and long term still need to follow; start small."];
+  if (["acc"].includes(sh) && (md === "acc" || lg === "acc")) return ["Bottoming", "--c-os", "Red line leads but the distance is reducing. Watch the short term (20) for the first bullish crossover."];
+  if (bear(sh) && (bull(lg) || lg === "dist")) return ["Pullback in uptrend", "--c-avg", "Short term has turned down while the long term (200) is still positive. Usually a dip inside the bigger uptrend; watch the 50."];
+  if (bear(sh) && bear(md)) return ["Downtrend", "--c-ob", "Short and medium are in a bearish phase. Keep positions small."];
+  if (score >= 3) return ["Bullish", "--c-main", "Most timeframes favour the blue line."];
+  if (score <= -3) return ["Bearish", "--c-ob", "Most timeframes favour the red line."];
+  return ["Mixed", "--c-mid", "Timeframes disagree; no clear cycle direction."];
+}
+function cycDraw() {
+  const S3 = CYC_TF.map(([k]) => cycSeries(k));
+  const panel = document.getElementById("cyc-panel");
+  panel.hidden = !S3.some(Boolean);
+  if (panel.hidden) return;
+  /* count how many of the three have the blue line above the red (bull crossover done) */
+  const got = S3.filter(Boolean), nBull = got.filter(c => c.cur.p >= 50).length, tot = got.length;
+  const cond = nBull * 2 > tot ? ["bull", "Bull condition"] : nBull > 0 ? ["turn", "Turning"] : ["bear", "Bear condition"];
+  const [rname, , rtext] = cycResult(S3);
+  const r = document.getElementById("cyc-result");
+  r.innerHTML = `<span class="cond ${cond[0]}">${cond[1]}</span><span class="xc">${nBull} of ${tot} crossover</span>`;
+  r.title = `${rname}: ${rtext}`;
+  document.getElementById("cyc3").innerHTML = CYC_TF.map(([k, n, ma], i) => {
+    const c = S3[i];
+    if (!c) return "";
+    const st = ST[c.cur.st];
+    return `<div class="cyc-card" title="${c.how}"><div class="tf">${n} <small>${ma.split(" ")[0]}</small></div>${wheelSvg(c.pts)}<div class="st" style="color:var(${st.col})">${st.name}</div></div>`;
+  }).join("");
 }
 
 document.getElementById("hdr").textContent = `Chartink dashboard 499165 · ${D[0]} – ${last(D)} · data as of ${DATA.asOf} close`;
