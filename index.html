@@ -115,6 +115,7 @@ footer { color: var(--muted); font-size: 0.78rem; }
 .cyc-head .cond.strong { background: var(--c-os); color: #fff; }
 .cyc-head .cond.turn { background: color-mix(in srgb, var(--c-avg) 18%, transparent); color: var(--c-avg); }
 .cyc-head .cond.neutral { background: color-mix(in srgb, var(--c-mid) 18%, transparent); color: var(--muted); }
+.cyc-head .cond.rec { background: color-mix(in srgb, var(--c-main) 15%, transparent); color: var(--c-main); }
 .cyc-head .xc { color: var(--muted); font-weight: 500; }
 .cyc3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cyc-card { text-align: center; min-width: 0; }
@@ -492,8 +493,8 @@ function momentumState() {
   if (v > 50 && above && rising) return { lv: 3, name: "Strong", col: "--c-dg", why: "Above 50, above avg, rising" };
   if (v > 50 && above)  return { lv: 3, name: "Strong",   col: "--c-dg", sub: "Choppy", why: "Above 50, above avg, not rising" };
   if (v > 50)           return { lv: 1, name: "Slowing",  col: "--c-avg", why: "Above 50, below avg" };
-  if (above && rising)  return { lv: 2, name: "Turning",  col: "--c-os", why: "Below 50, above avg, rising" };
-  if (above)            return { lv: 2, name: "Turning",  col: "--c-os", sub: "Choppy", why: "Below 50, above avg, not rising" };
+  if (above && rising)  return { lv: 2, name: "Turning",  col: "--c-main", why: "Below 50, above avg, rising" };
+  if (above)            return { lv: 2, name: "Turning",  col: "--c-main", sub: "Choppy", why: "Below 50, above avg, not rising" };
   return                  { lv: 0, name: "Negative", col: "--c-ob", why: "Below 50, below avg" };
 }
 /* rows = breadth (Weak, Improving, Healthy, Strong); columns = momentum (Negative, Slowing, Positive, Strong) */
@@ -504,7 +505,7 @@ const SENT = [
   ["Mixed",   "Cautious",  "Bullish",    "Very bullish"]
 ];
 const SENT_COL = { "Bearish": "bear", "Weakening": "bear", "Mixed": "turn", "Cautious": "turn",
-  "Recovering": "bull", "Improving": "bull", "Bullish": "bull", "Very bullish": "strong" };
+  "Recovering": "rec", "Improving": "bull", "Bullish": "bull", "Very bullish": "strong" };
 function sentDraw() {
   const panel = document.getElementById("sent-panel");
   if (!S.nh || !S.hom || !S.ahom) { panel.hidden = true; return; }
