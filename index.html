@@ -501,11 +501,11 @@ function momentumState() {
 const SENT = [
   ["Bearish", "Weakening", "Recovering", "Recovering"],
   ["Mixed",   "Cautious",  "Improving",  "Improving"],
-  ["Mixed",   "Cautious",  "Bullish",    "Bullish"],
-  ["Mixed",   "Cautious",  "Bullish",    "Very bullish"]
+  ["Mixed",   "Cautious",  "Building",   "Bullish"],
+  ["Mixed",   "Cautious",  "Building",   "Very bullish"]
 ];
 const SENT_COL = { "Bearish": "bear", "Weakening": "bear", "Mixed": "turn", "Cautious": "turn",
-  "Recovering": "rec", "Improving": "bull", "Bullish": "bull", "Very bullish": "strong" };
+  "Recovering": "rec", "Building": "rec", "Improving": "bull", "Bullish": "bull", "Very bullish": "strong" };
 function sentDraw() {
   const panel = document.getElementById("sent-panel");
   if (!S.nh || !S.hom || !S.ahom) { panel.hidden = true; return; }
